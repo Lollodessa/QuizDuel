@@ -1,4 +1,4 @@
-# ⚡ QuizDuel
+# ⚡ Mixly
 
 Real-time 1v1 quiz battles built with React Native + Expo + Firebase.
 

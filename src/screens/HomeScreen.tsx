@@ -113,7 +113,7 @@ export default function HomeScreen() {
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.setupContainer}>
           <Animated.View entering={FadeIn.duration(600)} style={styles.setupHero}>
             <Ionicons name="flash" size={64} color="#f4f4f8" />
-            <Text style={styles.setupTitle}>QuizDuel</Text>
+            <Text style={styles.setupTitle}>Mixly</Text>
             <Text style={styles.setupSub}>{t('howAreYouCalled')}</Text>
             {/* Language selector */}
             <View style={styles.langRow}>
@@ -171,7 +171,7 @@ export default function HomeScreen() {
 
       {/* Top bar */}
       <View style={styles.topBar}>
-        <Text style={styles.wordmark}>QUIZDUEL</Text>
+        <Text style={styles.wordmark}>MIXLY</Text>
         <View style={styles.currencyGroup}>
           <View style={styles.currencyPill}>
             <Ionicons name="wallet" size={12} color="#f59e0b" />
