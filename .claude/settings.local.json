@@ -1,0 +1,25 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(node /Users/lorenzo/QuizDuel/node_modules/react-native-reanimated/scripts/validate-worklets-build.js)",
+      "Bash(node -e ' *)",
+      "Bash(python3 -c \"import json,sys; p=json.load\\(sys.stdin\\); print\\(json.dumps\\(p.get\\('exports', {}\\), indent=2\\)\\)\")",
+      "Bash(node -e \"const p = require\\('/Users/lorenzo/QuizDuel/node_modules/@firebase/util/package.json'\\); console.log\\(JSON.stringify\\(p.exports, null, 2\\)\\)\")",
+      "Bash(rm -rf /tmp/metro-* /tmp/haste-* ~/.metro 2>/dev/null; echo \"Cache rimossa\")",
+      "Bash(find /Users/lorenzo/Library/Caches -name \"metro*\" -o -name \"haste-map*\" 2>/dev/null | head -10)",
+      "Read(//Users/lorenzo/Library/Caches/**)",
+      "Bash(watchman watch-list *)",
+      "Bash(watchman watch-del *)",
+      "Bash(watchman watch-del-all *)",
+      "Bash(find /var/folders -name \"*metro*\" -o -name \"*haste-map*\" 2>/dev/null | head -20)",
+      "Read(//private/var/folders/**)",
+      "Bash(rm -rf \"/var/folders/mx/q8flv3mj0x32qggyr4__hc240000gn/T/metro-file-map-expo-6157e5eccf69e20ca20a98edc2662dc9-40961eac2581de3e93f4cf77b0712314\" && echo \"Cache eliminata!\")",
+      "Bash(npm install *)",
+      "Bash(python3 -c \"from PIL import Image; print\\('pillow ok'\\)\")"
+    ],
+    "additionalDirectories": [
+      "/tmp",
+      "/private/var/folders/mx/q8flv3mj0x32qggyr4__hc240000gn/T"
+    ]
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "expo": {
+    "name": "QuizDuel",
+    "slug": "quizduel",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "assetBundlePatterns": ["**/*"],
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.yourcompany.quizduel"
+    },
+    "android": {
+      "package": "com.yourcompany.quizduel"
+    },
+    "plugins": ["expo-router"],
+    "scheme": "quizduel",
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}
