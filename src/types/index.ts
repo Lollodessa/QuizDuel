@@ -19,10 +19,13 @@ export interface Character {
 
 export type MatchMode = 'ranked' | 'friendly';
 
+export type QuestionType = 'multiple' | 'truefalse';
+
 export interface Question {
   id: string;
   topic: Topic;
   difficulty: 'easy' | 'medium' | 'hard';
+  type?: QuestionType; // omitted = 'multiple'
   text: { it: string; en: string; fr: string; es: string };
   options: { it: string[]; en: string[]; fr: string[]; es: string[] };
   correctIndex: number;

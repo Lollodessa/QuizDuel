@@ -15,10 +15,12 @@ import { shuffleQuestionIdsByDifficulty, getQuestionById } from '../data/questio
 import { Question, Topic, PlayerState } from '../types';
 import { useLanguage } from '../i18n';
 import { initSounds, playSound, stopSound, disposeSounds } from '../utils/sounds';
+import { setSoloGameResult } from '../utils/soloGameResult';
 
 import ScoreBoard from '../components/ScoreBoard';
 import QuestionCard from '../components/QuestionCard';
 import AnswerButton from '../components/AnswerButton';
+import TrueFalseButtons from '../components/TrueFalseButtons';
 import TimerBar from '../components/TimerBar';
 import SpinningWheel from '../components/SpinningWheel';
 
@@ -115,6 +117,7 @@ export default function SoloGameScreen() {
   const [answerCorrect,  setAnswerCorrect]  = useState<boolean | null>(null);
   const [botScore,       setBotScore]       = useState(0);
   const [botLastAnswerAt,setBotLastAnswerAt]= useState(0);
+  const [showReveal,     setShowReveal]     = useState(false);
 
   // ── Refs (avoid stale closures in timers) ─────────────────────────────────
   const currentQIdxRef = useRef(0);
@@ -125,8 +128,14 @@ export default function SoloGameScreen() {
   const botComboRef    = useRef(0);
   const myScoreRef     = useRef(0);
   const myComboRef     = useRef(0);
-  const botTimerRef    = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const phaseRef       = useRef<Phase>('wheel');
+  const botTimerRef        = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const phaseRef           = useRef<Phase>('wheel');
+  const hasRevealedRef     = useRef(false);
+  const pendingMyScoreRef  = useRef<number | null>(null);
+  const pendingMyComboRef  = useRef<number | null>(null);
+  const pendingBotScoreRef = useRef<number | null>(null);
+  const myAnswersRef       = useRef<Record<number, number>>({});
+  const botAnswersRef      = useRef<Record<number, number>>({});
 
   difficultyRef.current = difficulty;
 
@@ -165,13 +174,20 @@ export default function SoloGameScreen() {
       if (phaseRef.current === 'finished') return;
       const question = questionsRef.current[qIdx];
       if (!question) return;
-      const elapsed = Date.now() - qStart;
-      const correct = Math.random() < cfg.correctProbability;
+      const elapsed    = Date.now() - qStart;
+      const correct    = Math.random() < cfg.correctProbability;
       const { newScore, newCombo } = calculateScore(correct, elapsed, botScoreRef.current, botComboRef.current);
       botScoreRef.current = newScore;
       botComboRef.current = newCombo;
-      setBotScore(newScore);
+      pendingBotScoreRef.current = newScore;
       setBotLastAnswerAt(Date.now());
+      // Sceglie un optionIndex concreto (necessario per il riepilogo)
+      const ci = question.correctIndex;
+      const wrongIndices = question.options.it.map((_, i) => i).filter(i => i !== ci);
+      const botOptionIdx = correct
+        ? ci
+        : wrongIndices[Math.floor(Math.random() * wrongIndices.length)] ?? ci;
+      botAnswersRef.current[qIdx] = botOptionIdx;
     }, delay);
   }, []);
 
@@ -183,14 +199,33 @@ export default function SoloGameScreen() {
     scheduleBotAnswer(0);
 
     const interval = setInterval(() => {
-      const elapsed = Date.now() - startedAtRef.current;
-      const qIdx    = Math.min(Math.floor(elapsed / QUESTION_DURATION_MS), TOTAL_QUESTIONS - 1);
+      const elapsed    = Date.now() - startedAtRef.current;
+      const qIdx       = Math.min(Math.floor(elapsed / QUESTION_DURATION_MS), TOTAL_QUESTIONS - 1);
+      const elapsedInQ = elapsed - currentQIdxRef.current * QUESTION_DURATION_MS;
+
+      // Reveal a 10s: mostra esito e punteggi
+      if (elapsedInQ >= 10_000 && !hasRevealedRef.current) {
+        hasRevealedRef.current = true;
+        setShowReveal(true);
+        if (pendingMyScoreRef.current !== null) {
+          setMyScore(pendingMyScoreRef.current);
+          setMyCombo(pendingMyComboRef.current ?? 0);
+          pendingMyScoreRef.current = null;
+          pendingMyComboRef.current = null;
+        }
+        if (pendingBotScoreRef.current !== null) {
+          setBotScore(pendingBotScoreRef.current);
+          pendingBotScoreRef.current = null;
+        }
+      }
 
       if (qIdx !== currentQIdxRef.current) {
+        hasRevealedRef.current = false;
         currentQIdxRef.current = qIdx;
         setCurrentQIdx(qIdx);
         setMyAnswerIdx(null);
         setAnswerCorrect(null);
+        setShowReveal(false);
         scheduleBotAnswer(qIdx);
       }
 
@@ -211,6 +246,21 @@ export default function SoloGameScreen() {
   useEffect(() => {
     if (phase !== 'finished') return;
     if (botTimerRef.current) clearTimeout(botTimerRef.current);
+
+    setSoloGameResult({
+      questions:  questionsRef.current,
+      myAnswers:  { ...myAnswersRef.current },
+      botAnswers: { ...botAnswersRef.current },
+    });
+
+    console.log('[SoloGame] risultati salvati:', {
+      questions:  questionsRef.current.map((q, i) => ({
+        idx: i, id: q.id, correct: q.correctIndex,
+        myAnswer:  myAnswersRef.current[i] ?? null,
+        botAnswer: botAnswersRef.current[i] ?? null,
+      })),
+    });
+
     setTimeout(() => {
       router.replace({
         pathname: '/solo-result',
@@ -237,8 +287,9 @@ export default function SoloGameScreen() {
     myComboRef.current = newCombo;
     setMyAnswerIdx(optionIndex);
     setAnswerCorrect(correct);
-    setMyScore(newScore);
-    setMyCombo(newCombo);
+    pendingMyScoreRef.current = newScore;
+    pendingMyComboRef.current = newCombo;
+    myAnswersRef.current[currentQIdx] = optionIndex;
     Haptics.notificationAsync(
       correct ? Haptics.NotificationFeedbackType.Success : Haptics.NotificationFeedbackType.Error,
     );
@@ -259,8 +310,12 @@ export default function SoloGameScreen() {
   }), [botScore, botLastAnswerAt]);
 
   const getButtonState = (idx: number) => {
-    if (myAnswerIdx === null) return 'idle';
-    if (idx === myAnswerIdx)  return answerCorrect ? 'selected-correct' : 'selected-wrong';
+    if (myAnswerIdx === null) {
+      if (showReveal && idx === currentQuestion?.correctIndex) return 'reveal-correct';
+      return 'idle';
+    }
+    if (!showReveal) return idx === myAnswerIdx ? 'selected-pending' : 'disabled';
+    if (idx === myAnswerIdx) return answerCorrect ? 'selected-correct' : 'selected-wrong';
     if (!answerCorrect && idx === currentQuestion?.correctIndex) return 'reveal-correct';
     return 'disabled';
   };
@@ -347,17 +402,25 @@ export default function SoloGameScreen() {
 
         <ComboBadge combo={myCombo} />
 
-        <View style={styles.answers}>
-          {currentQuestion.options[lang].map((option, idx) => (
-            <AnswerButton
-              key={idx}
-              index={idx}
-              label={option}
-              state={getButtonState(idx)}
-              onPress={() => handleAnswer(idx)}
-            />
-          ))}
-        </View>
+        {(currentQuestion.type ?? 'multiple') === 'truefalse' ? (
+          <TrueFalseButtons
+            labels={[currentQuestion.options[lang][0], currentQuestion.options[lang][1]]}
+            getState={getButtonState}
+            onPress={handleAnswer}
+          />
+        ) : (
+          <View style={styles.answers}>
+            {currentQuestion.options[lang].map((option, idx) => (
+              <AnswerButton
+                key={idx}
+                index={idx}
+                label={option}
+                state={getButtonState(idx)}
+                onPress={() => handleAnswer(idx)}
+              />
+            ))}
+          </View>
+        )}
       </View>
     </SafeAreaView>
   );

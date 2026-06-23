@@ -9,7 +9,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 
-type ButtonState = 'idle' | 'selected-correct' | 'selected-wrong' | 'reveal-correct' | 'disabled';
+type ButtonState = 'idle' | 'selected-pending' | 'selected-correct' | 'selected-wrong' | 'reveal-correct' | 'disabled';
 
 interface Props {
   label: string;
@@ -25,7 +25,9 @@ export default function AnswerButton({ label, index, state, onPress }: Props) {
   const translateX = useSharedValue(0);
 
   useEffect(() => {
-    if (state === 'selected-correct') {
+    if (state === 'selected-pending') {
+      scale.value = withSequence(withSpring(1.02, { damping: 6 }), withSpring(1));
+    } else if (state === 'selected-correct') {
       scale.value = withSequence(withSpring(1.03, { damping: 5 }), withSpring(1));
     } else if (state === 'selected-wrong') {
       translateX.value = withSequence(
@@ -44,6 +46,7 @@ export default function AnswerButton({ label, index, state, onPress }: Props) {
 
   const getBg = () => {
     switch (state) {
+      case 'selected-pending': return '#12122a';
       case 'selected-correct': return '#0a2a14';
       case 'reveal-correct':   return '#0a2014';
       case 'selected-wrong':   return '#2a0a0a';
@@ -53,6 +56,7 @@ export default function AnswerButton({ label, index, state, onPress }: Props) {
 
   const getBorder = () => {
     switch (state) {
+      case 'selected-pending': return '#5a5aaa';
       case 'selected-correct':
       case 'reveal-correct':   return '#16a34a';
       case 'selected-wrong':   return '#dc2626';

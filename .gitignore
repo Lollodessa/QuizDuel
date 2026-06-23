@@ -13,3 +13,6 @@ ios/Pods/
 ios/build/
 android/build/
 android/.gradle/
+.DS_Store
+**/.DS_Store
+.claude/

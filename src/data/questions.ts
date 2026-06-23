@@ -1,6 +1,25 @@
 import { Question, Topic } from '../types';
 
 const allQuestions: Question[] = [
+  // ─── TEST vero/falso — RIMUOVERE dopo il collaudo ─────────────────────
+  {
+    id: 'test_tf_01', topic: 'Cinema',
+    difficulty: 'medium',
+    type: 'truefalse',
+    text: {
+      en: 'James Cameron directed "Titanic" (1997).',
+      it: 'James Cameron ha diretto "Titanic" (1997).',
+      fr: 'James Cameron a réalisé "Titanic" (1997).',
+      es: 'James Cameron dirigió "Titanic" (1997).',
+    },
+    options: {
+      en: ['True',       'False'],
+      it: ['Vero',       'Falso'],
+      fr: ['Vrai',       'Faux'],
+      es: ['Verdadero',  'Falso'],
+    },
+    correctIndex: 0,
+  },
   // ─── CINEMA ───────────────────────────────────────────────────────────
   {
     id: 'cin_01', topic: 'Cinema',

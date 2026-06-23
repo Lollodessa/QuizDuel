@@ -23,6 +23,7 @@ import { useLanguage } from '../i18n';
 import ScoreBoard from '../components/ScoreBoard';
 import QuestionCard from '../components/QuestionCard';
 import AnswerButton from '../components/AnswerButton';
+import TrueFalseButtons from '../components/TrueFalseButtons';
 import TimerBar from '../components/TimerBar';
 import SpinningWheel from '../components/SpinningWheel';
 
@@ -99,13 +100,20 @@ export default function GameScreen() {
   const [answerCorrect, setAnswerCorrect] = useState<boolean | null>(null);
   const [showWheel, setShowWheel] = useState(true);
   const [showCountdown, setShowCountdown] = useState(false);
+  const [showReveal,            setShowReveal]            = useState(false);
+  const [revealedMyScore,       setRevealedMyScore]       = useState(0);
+  const [revealedMyCombo,       setRevealedMyCombo]       = useState(0);
+  const [revealedOpponentScore, setRevealedOpponentScore] = useState(0);
 
   const currentQIdxRef = useRef(0);
-  const finishedRef = useRef(false);
+  const finishedRef    = useRef(false);
   const gameStartedRef = useRef(false);
-  const unsubRef = useRef<(() => void) | null>(null);
+  const unsubRef       = useRef<(() => void) | null>(null);
+  const hasRevealedRef = useRef(false);
+  const roomRef        = useRef<Room | null>(null);
 
   const uid = auth.currentUser?.uid ?? '';
+  roomRef.current = room;
 
   useEffect(() => {
     if (!roomId) return;
@@ -126,14 +134,30 @@ export default function GameScreen() {
     const startedAt = room.startedAt;
 
     const interval = setInterval(() => {
-      const elapsed = Date.now() - startedAt;
-      const qIdx = Math.min(Math.floor(elapsed / QUESTION_DURATION_MS), TOTAL_QUESTIONS - 1);
+      const elapsed    = Date.now() - startedAt;
+      const qIdx       = Math.min(Math.floor(elapsed / QUESTION_DURATION_MS), TOTAL_QUESTIONS - 1);
+      const elapsedInQ = elapsed - currentQIdxRef.current * QUESTION_DURATION_MS;
+
+      // Reveal a 10s: aggiorna i punteggi visualizzati da Firebase
+      if (elapsedInQ >= 10_000 && !hasRevealedRef.current) {
+        hasRevealedRef.current = true;
+        setShowReveal(true);
+        const r = roomRef.current;
+        if (r) {
+          setRevealedMyScore(r.players[uid]?.score ?? 0);
+          setRevealedMyCombo(r.players[uid]?.combo ?? 0);
+          const opp = Object.values(r.players).find(p => p.uid !== uid);
+          if (opp) setRevealedOpponentScore(opp.score);
+        }
+      }
 
       if (qIdx !== currentQIdxRef.current) {
+        hasRevealedRef.current = false;
         currentQIdxRef.current = qIdx;
         setCurrentQIdx(qIdx);
         setMyAnswerIdx(null);
         setAnswerCorrect(null);
+        setShowReveal(false);
       }
 
       if (elapsed >= QUESTION_DURATION_MS * TOTAL_QUESTIONS && !finishedRef.current) {
@@ -184,7 +208,11 @@ export default function GameScreen() {
   };
 
   const getButtonState = (idx: number) => {
-    if (myAnswerIdx === null) return 'idle';
+    if (myAnswerIdx === null) {
+      if (showReveal && idx === currentQuestion?.correctIndex) return 'reveal-correct';
+      return 'idle';
+    }
+    if (!showReveal) return idx === myAnswerIdx ? 'selected-pending' : 'disabled';
     if (idx === myAnswerIdx) return answerCorrect ? 'selected-correct' : 'selected-wrong';
     if (!answerCorrect && idx === currentQuestion?.correctIndex) return 'reveal-correct';
     return 'disabled';
@@ -204,8 +232,8 @@ export default function GameScreen() {
       <LinearGradient colors={['#1244c8', '#1040b8']} style={StyleSheet.absoluteFillObject} />
 
       <ScoreBoard
-        me={myPlayer ?? { uid, username: 'Tu', score: 0, combo: 0, trophies: 0, answers: {}, lastAnswerAt: 0 }}
-        opponent={opponentPlayer}
+        me={{ ...(myPlayer ?? { uid, username: 'Tu', score: 0, combo: 0, trophies: 0, answers: {}, lastAnswerAt: 0 }), score: revealedMyScore, combo: revealedMyCombo }}
+        opponent={opponentPlayer ? { ...opponentPlayer, score: revealedOpponentScore } : null}
         questionIndex={currentQIdx}
         totalQuestions={TOTAL_QUESTIONS}
       />
@@ -231,19 +259,27 @@ export default function GameScreen() {
           </View>
         )}
 
-        <ComboBadge combo={myPlayer?.combo ?? 0} />
+        <ComboBadge combo={revealedMyCombo} />
 
-        <View style={styles.answers}>
-          {currentQuestion.options[lang].map((option, idx) => (
-            <AnswerButton
-              key={idx}
-              index={idx}
-              label={option}
-              state={getButtonState(idx)}
-              onPress={() => handleAnswer(idx)}
-            />
-          ))}
-        </View>
+        {(currentQuestion.type ?? 'multiple') === 'truefalse' ? (
+          <TrueFalseButtons
+            labels={[currentQuestion.options[lang][0], currentQuestion.options[lang][1]]}
+            getState={getButtonState}
+            onPress={handleAnswer}
+          />
+        ) : (
+          <View style={styles.answers}>
+            {currentQuestion.options[lang].map((option, idx) => (
+              <AnswerButton
+                key={idx}
+                index={idx}
+                label={option}
+                state={getButtonState(idx)}
+                onPress={() => handleAnswer(idx)}
+              />
+            ))}
+          </View>
+        )}
       </View>
 
       {showWheel && room.status === 'countdown' && (
