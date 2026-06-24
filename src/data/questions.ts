@@ -75,10 +75,10 @@ const allQuestions: Question[] = [
     id: 'cin_05', topic: 'Cinema',
     difficulty: 'medium',
     text: {
-      en: 'What is the highest-grossing film of all time (nominal box office)?',
-      it: "Qual è il film con il maggiore incasso di tutti i tempi (nominale)?",
-      fr: 'Quel est le film ayant réalisé les plus gros revenus de tous les temps (en valeur nominale) ?',
-      es: '¿Cuál es la película más taquillera de todos los tiempos (ingresos nominales)?',
+     en: 'Which 2009 James Cameron film is set on the planet Pandora?',
+      it: 'Quale film di James Cameron del 2009 è ambientato sul pianeta Pandora?',
+      fr: 'Quel film de James Cameron de 2009 se déroule sur la planète Pandora ?',
+      es: '¿Qué película de James Cameron de 2009 está ambientada en el planeta Pandora?',
     },
     options: {
       en: ['Avatar', 'Star Wars: The Force Awakens', 'Titanic', 'Avengers: Endgame'],
@@ -3608,10 +3608,10 @@ const allQuestions: Question[] = [
     id: 'sci_11', topic: 'Science',
     difficulty: 'medium',
     text: {
-      en: 'Which planet in our solar system has the most known moons?',
-      it: 'Quale pianeta del sistema solare ha il maggior numero di lune conosciute?',
-      fr: 'Quelle planète de notre système solaire a le plus grand nombre de lunes connues ?',
-      es: '¿Qué planeta de nuestro sistema solar tiene más lunas conocidas?',
+      en: 'Which planet in our solar system is the second largest, after Jupiter?',
+      it: 'Quale pianeta del sistema solare è il secondo più grande, dopo Giove?',
+      fr: 'Quelle planète de notre système solaire est la deuxième plus grande, après Jupiter ?',
+      es: '¿Qué planeta de nuestro sistema solar es el segundo más grande, después de Júpiter?',
     },
     options: {
       en: ['Saturn', 'Uranus', 'Jupiter', 'Neptune'],
